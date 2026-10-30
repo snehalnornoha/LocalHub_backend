@@ -47,6 +47,6 @@ p_routes.put('/updtprofimg',upload.array('images'),handle_updtprofimg)
 p_routes.put('/grntup',handle_grntup)
 
 /* logout */
-p_routes.post(`/logout`,logout)
+p_routes.get(`/logout`,logout)
 
 export default p_routes;
