@@ -198,7 +198,7 @@ export const handle_post_upload = async(req, res , next)=>{
     
     const values = [userid,user_info.title,user_info.type.toUpperCase(),
                         user_info.description,image_URLs,user_info.user_img_url,user_info.state,
-                        user_info.district,user_info.taluk ,user_info.locality,user_role];
+                        user_info.district,user_info.taluk ,user_info.locality,user_role,user_info.name];
   
     const ans = await insert_posts(values)
       if(ans.success){
