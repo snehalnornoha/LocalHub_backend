@@ -36,11 +36,11 @@ export const test_jwt = (a_token)=>{
    
 
 }
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 async function authentication(req ,res ,next ){
 
     console.log("imain auth")
-    await delay(5000);
+    
     
     console.log( req.cookies.accessToken)
     console.log(req.cookies)
