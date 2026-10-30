@@ -65,6 +65,9 @@ app.use(logger);
 
 
 app.use("/api", router)
+app.get("/", (req, res) => {
+    res.status(200).send("LocalHub backend is running");
+});
 app.use(authentication)
 app.use("/protectedApi",p_routes)
 
