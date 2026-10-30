@@ -171,6 +171,7 @@ export const handle_post_upload = async(req, res , next)=>{
     const user_role = req.user_role 
     const images = req.files
     const user_info = req.body
+    /*
     if((["local_community_representative", "local_community_member"].includes(user_role) && user_info.type.toUpperCase() === 'ADVERTISEMENT')
     || (user_role === 'user' && (user_info.type.toUpperCase() !== 'WORK' ))){
         const err = new Error("un-successfull : account with this email is not eligible to do this")
@@ -186,6 +187,7 @@ export const handle_post_upload = async(req, res , next)=>{
             next(err)
         }
     }
+        */
     console.log(req.body)
     console.log("iam in getupadte_info" , images,userid , user_info ,user_role)
 
@@ -193,6 +195,7 @@ export const handle_post_upload = async(req, res , next)=>{
     if(!images) return res.json("something went wrong please check the image ");
     const image_URLs =  await  uploadToCloudinary(images[0].buffer)
     console.log("hey upload complted ", image_URLs)
+
     
     if(image_URLs){
     
