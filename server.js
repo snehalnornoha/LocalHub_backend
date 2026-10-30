@@ -42,7 +42,7 @@ const io = new Server(server, {
         credentials: true
     }
 });
-//initSocket(io,users);
+initSocket(io,users);
 
 
 
@@ -72,8 +72,6 @@ app.use("/protectedApi",p_routes)
 
 
 
-
-/*
 
 io.use((socket, next) => {
     console.log("iam in socket .use")
@@ -111,94 +109,17 @@ io.on("connection", async(socket ,next) => {
     console.log("//////////////////////////////////////////////////")
     console.log("User connected:", socket.user_id);
     users.set(socket.user_id, socket.id);
-    const ansf = await  friend_id(socket.user_id)
-    const userId = socket.user_id
-    const friendIdS =  ansf.data || []
-    console.log( "tyytyty:",ansf)
-    if(ansf.success){
-         
-         /////
-          const friendIds =  ansf.data
-
-        // Find currently online friends
-        const onlfr = friendIds.filter(friendId => users.has(friendId.friend_id))
-       const onlineFriends = onlfr.map(friendId => friendId.friend_id);
-        console.log("all_users" , users)
-        console.log("online friends" , onlineFriends)
-
-        // Tell this user
-        socket.emit("friends_online", onlineFriends);
-
-        // Tell online friends that this user came online
-        for (const friendId of onlineFriends) {
-
-            const friendSocket = users.get(friendId);
-            console.log("socket : id",friendSocket ,friendId)
-
-            if (friendSocket) {
-                io.to(friendSocket).emit("friend_online", userId);
-            }
-        }
-
-
-
-
-
-         //////
-
-
-    }
-
-    socket.on("send_message", async(data) => {
-        console.log(data)
-        const ans= await chat_update(data) 
-        console.log("my firds" , ans)
-        if(ans.success){
-            const receiverSocketId = users.get(data.To);
-            console.log(receiverSocketId,ans.data)
-            if (receiverSocketId) {
-            console.log("sent")
-            io.to(receiverSocketId).emit("new_message", ans.data);
-        }
-        else{ console.log("offline")}
-    }
-
-    });
-
-
-
-
-
+    
 
   socket.on("disconnect", () => {
 
     if (users.get(socket.user_id) === socket.id) {
-        users.delete(socket.user_id);
-        const onlfr = friendIdS.filter(friendId => users.has(friendId.friend_id))
-       const onlineFriends = onlfr.map(friendId => friendId.friend_id);
-
-            
-      // Tell friends this user went offline
-            for (const friendId of onlineFriends) {
-
-                const friendSocketId = users.get(friendId);
-                console.log(friendSocketId , friendId)
-
-                if (friendSocketId) {
-
-                    console.log("sending disconnect to ", friendSocketId)
-                    io.to(friendSocketId).emit(
-                        "friend_offline",
-                        userId
-                    );
-
-                }
-            }
+        users.delete(socket.user_id);     
         }
 });
 });        
 
-*/
+
 
 app.use((req ,res , next) =>{
     const err =new Error('not found');

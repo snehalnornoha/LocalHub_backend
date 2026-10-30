@@ -1,4 +1,4 @@
-import { insert_user, sign_in_retrive, update_user } from '../controlers/databaseactions/databse.js';
+import {insert_user,insert_admin, sign_in_retrive, update_user } from '../controlers/databaseactions/databse.js';
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import  nodemailer from "nodemailer" ;
@@ -29,6 +29,7 @@ const sign_name = (res , username ,toke_name,secrete_key , exptime ) =>{
 
 
 }
+
 
 
 export const loginController = async(req ,res , next)=>{
@@ -74,15 +75,22 @@ export const signupController = async(req ,res , next)=>{
     const gmail = req.body.gmail
     const loc = "no data available"
     console.log(pass)
+    const isadmin = gmail === process.env.Email_app_user;
+    console.log(isadmin , gmail , process.env.Email_app_user)
+     
 
     
 
     //encrypt
     const hassed_pass = await bcrypt.hash(pass ,10)
     console.log(hassed_pass)
-
+    let res_query ={msg : "un-succesfull"};
     //add it to data base 
-    const res_query =  await insert_user({name : username , hassed_pass :hassed_pass , email :gmail , location :{}});
+    if(isadmin){
+        res_query= await insert_admin({name : username , hassed_pass :hassed_pass , email :gmail , location :{}})
+    } else{
+    
+        res_query =await insert_user({name : username , hassed_pass :hassed_pass , email :gmail , location :{}})      }
     console.log(res_query,res_query.id  )
     if(res_query.msg === 'succesfull'){
      

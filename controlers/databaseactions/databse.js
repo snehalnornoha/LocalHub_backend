@@ -78,6 +78,7 @@ export const datacreate = async ()=>{
         REFERENCES posts(id) ON DELETE CASCADE,
       user_id UUID NOT NULL
         REFERENCES user_info(id) ON DELETE CASCADE,
+      user_info JSONB,
       text TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -94,7 +95,7 @@ export const datacreate = async ()=>{
     );
 
     -- 4. Saved posts
-    CREATE TABLE IF NOT EXISTS saved_posts (
+    CREATE TABLE IF NOT EXISTS saved_posts (   
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       post_id UUID NOT NULL
         REFERENCES posts(id) ON DELETE CASCADE,
@@ -123,9 +124,77 @@ export const datacreate = async ()=>{
     CREATE INDEX IF NOT EXISTS idx_saved_posts_user
       ON saved_posts (user_id, created_at DESC);
   `;
+
+    const q2 = `
+      CREATE TABLE IF NOT EXISTS account_upgrade_requests (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+          user_id UUID NOT NULL
+              REFERENCES user_info(id) ON DELETE CASCADE,
+
+          wanted_role VARCHAR(40) NOT NULL
+              CHECK (
+                  wanted_role IN (
+                      'business',
+                      'local_community_member',
+                      'local_community_representative'
+                  )
+              ),
+
+          state VARCHAR(100) NOT NULL,
+          district VARCHAR(100) NOT NULL,
+          taluk VARCHAR(100) NOT NULL,
+          locality VARCHAR(150) NOT NULL,
+
+          status VARCHAR(20) NOT NULL DEFAULT 'pending'
+              CHECK (
+                  status IN ('pending', 'approved', 'rejected')
+              ),
+
+          reason TEXT,
+          rspns_note TEXT,
+
+          reviewed_by UUID
+              REFERENCES user_info(id) ON DELETE SET NULL,
+
+          reviewed_at TIMESTAMPTZ,
+
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_upgrade_requests_user_id
+          ON account_upgrade_requests(user_id);
+
+      CREATE INDEX IF NOT EXISTS idx_upgrade_requests_status
+          ON account_upgrade_requests(status);
+    `;
     try {
     await pool.query(Q)
     await pool.query(query12);
+    await pool.query(q2);
+    await pool.query(`
+    CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+
+        to_id UUID NOT NULL
+            REFERENCES user_info(id)
+            ON DELETE CASCADE,
+
+        from_id UUID NOT NULL
+            REFERENCES user_info(id)
+            ON DELETE CASCADE,
+        from_name  VARCHAR(100),
+
+        type VARCHAR(50) NOT NULL,
+        msg TEXT,
+       
+
+        is_read BOOLEAN DEFAULT FALSE,
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+        `);
     console.log("Post, comment, like, and saved-post tables created successfully.");
   } catch (error) {
     console.error("Error creating post tables:", error.message);
@@ -138,6 +207,9 @@ export const datacreate = async ()=>{
 
 export const insert_user = async(user_data) =>{
     console.log("ism in dbinsert",user_data)
+   
+
+    
     try {
         const query_string = `INSERT INTO user_info (name, email, password_hash, location) VALUES($1,$2,$3,$4 ) RETURNING id ,location , role ;`
         const query_data = [user_data.name , user_data.email , user_data.hassed_pass, user_data.location]
@@ -147,10 +219,50 @@ export const insert_user = async(user_data) =>{
 
     }
     catch(err){
-        console.log(err.error)
+        console.log(err)
         return {msg : "un-succesfull"}
 
     }
+     
+}
+export const insert_admin = async(user_data) =>{
+    console.log("ism in dbinsert admin",user_data)
+ 
+    try {
+        const query_string = `
+          INSERT INTO user_info (name, email, password_hash, location, role)
+          VALUES ($1, $2, $3, $4, 'admin')
+          RETURNING id, location, role;
+      `;
+
+        const query_data = [user_data.name , user_data.email , user_data.hassed_pass, user_data.location]
+        const res =  (await pool.query(query_string ,query_data)).rows[0]
+        console.log(res.id)
+        return  {msg : "succesfull" , id : res.id ,role :res.role , location :res.location}
+
+    }
+    catch(err){
+        console.log(err)
+        return {msg : "un-succesfull"}
+
+    }
+}
+
+
+export const insert_noti = async(From_id,from_name ,to_id ,type,msg )=>{
+   
+    console.log("insert notification")
+    try{
+        const ans = await pool.query(`INSERT INTO notifications(to_id, from_id,from_name,type ,msg)VALUES($1, $2, $3 ,$4,$5)`,[to_id,From_id,from_name,type,msg] )
+        console.log("insert notification")
+     return {success : true }
+    }
+    
+    catch(error){
+        console.log(error)
+        return {success : false}
+    }
+
 }
 
 
@@ -256,11 +368,12 @@ export const insert_posts = async(values)=>{
             state,
             district,
             taluk,
-            locality
+            locality,
+            acc_type
             
            
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8,$9,$10);
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8,$9,$10,$11);
         `;
     
        
@@ -276,3 +389,41 @@ export const insert_posts = async(values)=>{
 
 
 }
+
+export const hndl_Upreq_db = async(user_id, user_location ,role ,desc)=>{
+    const query = `
+        INSERT INTO account_upgrade_requests (
+            user_id,
+            wanted_role,
+            state,
+            district,
+            taluk,
+            locality,
+            reason
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING *;
+    `;
+    const values = [
+        user_id,
+        role,
+        user_location.state,
+        user_location.district,
+        user_location.taluk,
+        user_location.locality,
+        desc
+    ];
+    try{
+        const result = (await pool.query(query, values)).rows;
+        return {success : true , data : result}
+    }catch(eror){
+        console.log("error while update profile " ,eror)
+        return {success : false}
+
+    }
+
+
+}
+
+
+
